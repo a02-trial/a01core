@@ -1,7 +1,66 @@
-on init
-    exec u:r:recovery:s0 -- /sbin/mntl_link
+import /teegris.a01core.rc
 
-on post-fs-data
-# Support A/B feature for boot region
-    symlink /dev/block/mmcblk0boot0 /dev/block/platform/bootdevice/by-name/preloader_a
-    symlink /dev/block/mmcblk0boot1 /dev/block/platform/bootdevice/by-name/preloader_b
+on fs
+    install_keyring
+    mkdir /mnt/vendor/efs/tee 0700 system system
+    mkdir /dev/socket/iwt 0770 system system
+    mkdir /dev/socket/iwt/ca 0770 system system
+
+service keystore_auth /system/bin/keystore_auth
+    oneshot
+    user system
+    group root
+    disabled
+    seclabel u:r:recovery:s0
+
+service keystore /system/bin/keystore /tmp/misc/keystore
+    user root
+    group root drmrpc readproc
+    disabled
+    seclabel u:r:recovery:s0
+
+service keymaster-4-0 /system/bin/android.hardware.keymaster@4.0-service
+    user root
+    group root drmrpc
+    disabled
+    seclabel u:r:recovery:s0
+
+service gatekeeper-1-0 /system/bin/android.hardware.gatekeeper@1.0-service
+    user root
+    group root
+    disabled
+    seclabel u:r:recovery:s0
+
+on property:hwservicemanager.ready=true
+    start tz_service
+    wait_for_prop vendor.tzdaemon Ready
+    setprop vendor.TEEGRIS.loaded true
+    write /proc/iccc_ready 1
+    start tzts_service
+    wait_for_prop vendor.tzts_daemon Ready
+    start keymaster-4-0
+    start gatekeeper-1-0
+
+on property:ro.crypto.state=unsupported
+    stop tz_service
+    stop tzts_service
+    stop servicemanager
+    stop hwservicemanager
+    stop keymaster-4-0
+    stop gatekeeper-1-0
+
+on property:ro.crypto.state=unencrypted
+    stop tz_service
+    stop tzts_service
+    stop servicemanager
+    stop hwservicemanager
+    stop keymaster-4-0
+    stop gatekeeper-1-0
+
+on property:twrp.decrypt.done=true
+    stop tz_service
+    stop tzts_service
+    stop servicemanager
+    stop hwservicemanager
+    stop keymaster-4-0
+    stop gatekeeper-1-0
