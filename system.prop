@@ -1,0 +1,7 @@
+ro.treble.enabled=true
+sys.usb.controller=musb-hdrc
+ro.mediatek.version.branch=alps-mp-r0.mssi1.tc10sp
+ro.mediatek.version.release=alps-mp-r0.mssi1.tc10sp-pre36_titan.r0mssi1.k39tv1.bsp.titan_hamster
+ro.boot.dynamic_partitions=true
+ro.vendor.rc=/vendor/etc/init/hw/
+persist.service.adb.root=1
